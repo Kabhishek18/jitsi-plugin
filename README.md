@@ -369,7 +369,7 @@ We provide a ready-to-use Django app that integrates with Jitsi-Py to add video 
    pip install jitsi-py[django]
    ```
 
-2. Download the [Django integration package (jitsi_meetings.zip)](docs/jitsi_meetings.zip) and extract it to your Django project.
+2. Download the Django integration package from our [GitHub repository](https://github.com/Kabhishek18/jitsi-plugin/raw/main/docs/jitsi_meetings.zip) and extract it to your Django project.
 
 3. Add it to your INSTALLED_APPS:
    ```python
@@ -380,7 +380,7 @@ We provide a ready-to-use Django app that integrates with Jitsi-Py to add video 
    ]
    ```
 
-4. See our [detailed Django integration guide](docs/django-integration.md) for complete setup instructions.
+4. See our [detailed Django integration guide](https://github.com/Kabhishek18/jitsi-plugin/blob/main/docs/django-integration.md) for complete setup instructions.
 
 ### FastAPI Integration
 
