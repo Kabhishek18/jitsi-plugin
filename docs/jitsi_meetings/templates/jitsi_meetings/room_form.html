@@ -1,0 +1,46 @@
+{% extends "jitsi_meetings/base.html" %}
+
+{% block title %}{% if is_update %}Edit{% else %}Create{% endif %} Meeting Room{% endblock %}
+
+{% block content %}
+<div class="meeting-container">
+    <h1 class="mb-4">{% if is_update %}Edit{% else %}Create{% endif %} Meeting Room</h1>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="{{ form.name.id_for_label }}" class="form-label">Room Name</label>
+                    {{ form.name }}
+                    {% if form.name.help_text %}
+                        <div class="form-text">{{ form.name.help_text }}</div>
+                    {% endif %}
+                    {% if form.name.errors %}
+                        <div class="text-danger">{{ form.name.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                    {{ form.description }}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="{{ form.duration_hours.id_for_label }}" class="form-label">Duration (hours)</label>
+                    {{ form.duration_hours }}
+                    {% if form.duration_hours.help_text %}
+                        <div class="form-text">{{ form.duration_hours.help_text }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">{% if is_update %}Update{% else %}Create{% endif %} Room</button>
+                    <a href="{% url 'jitsi_meetings:room_list' %}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

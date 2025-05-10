@@ -1,0 +1,40 @@
+{% extends "jitsi_meetings/base.html" %}
+
+{% block title %}Meeting: {{ room_name }}{% endblock %}
+
+{% block content %}
+<div class="meeting-container">
+    <h1 class="mb-4">Meeting: {{ room_name }}</h1>
+    
+    <div class="alert alert-info">
+        <p><strong>Share this URL with others:</strong></p>
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" value="{{ request.build_absolute_uri|urlencode }}" id="meeting-url" readonly>
+            <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard()">Copy</button>
+        </div>
+        <p>Direct join link: <a href="{% url 'jitsi_meetings:join_simple_meeting' room_name=room_name %}">Join this meeting</a></p>
+    </div>
+    
+    <div class="jitsi-container">
+        <iframe
+            src="{{ join_url }}"
+            width="100%"
+            height="100%"
+            allow="camera; microphone; fullscreen; display-capture; autoplay"
+            frameborder="0">
+        </iframe>
+    </div>
+</div>
+
+{% block extra_scripts %}
+<script>
+    function copyToClipboard() {
+        var copyText = document.getElementById("meeting-url");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999); /* For mobile devices */
+        document.execCommand("copy");
+        alert("Copied meeting URL to clipboard!");
+    }
+</script>
+{% endblock %}
+{% endblock %}

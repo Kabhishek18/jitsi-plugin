@@ -14,8 +14,12 @@ This documentation will guide you through the installation, configuration, and u
 4. [Authentication and Security](#authentication-and-security)
 5. [Advanced Features](#advanced-features)
 6. [Framework Integrations](#framework-integrations)
-7. [API Reference](#api-reference)
-8. [Troubleshooting](#troubleshooting)
+   - [Django Integration](#django-integration)
+   - [FastAPI Integration](#fastapi-integration)
+7. [Command-Line Interface](#command-line-interface)
+8. [API Reference](#api-reference)
+9. [Troubleshooting](#troubleshooting)
+10. [Conclusion](#conclusion)
 
 ## Installation
 
@@ -358,7 +362,25 @@ rest_client.stop_transcription("transcribed-meeting")
 
 ### Django Integration
 
-See our [dedicated Django integration guide](django-integration.md) for detailed instructions and examples.
+We provide a ready-to-use Django app that integrates with Jitsi-Py to add video conferencing capabilities to your Django project.
+
+1. First, install Jitsi-Py with Django integration:
+   ```bash
+   pip install jitsi-py[django]
+   ```
+
+2. Download the [Django integration package (jitsi_meetings.zip)](docs/jitsi_meetings.zip) and extract it to your Django project.
+
+3. Add it to your INSTALLED_APPS:
+   ```python
+   INSTALLED_APPS = [
+       # ...
+       'jitsi_meetings',
+       # ...
+   ]
+   ```
+
+4. See our [detailed Django integration guide](docs/django-integration.md) for complete setup instructions.
 
 ### FastAPI Integration
 

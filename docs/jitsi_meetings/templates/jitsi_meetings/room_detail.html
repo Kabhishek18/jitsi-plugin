@@ -1,0 +1,121 @@
+{% extends "jitsi_meetings/base.html" %}
+
+{% block title %}Room: {{ room.name }}{% endblock %}
+
+{% block content %}
+<div class="meeting-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Room: {{ room.name }}</h1>
+        <div class="btn-group">
+            <a href="{% url 'jitsi_meetings:advanced_meeting' pk=room.id %}" class="btn btn-success">Join Meeting</a>
+            {% if room.created_by == user %}
+                <a href="{% url 'jitsi_meetings:room_update' pk=room.id %}" class="btn btn-secondary">Edit</a>
+                <a href="{% url 'jitsi_meetings:room_delete' pk=room.id %}" class="btn btn-danger">Delete</a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Room Details</h5>
+            <p>{{ room.description|default:"No description" }}</p>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Created by:</strong> {{ room.created_by.get_full_name|default:room.created_by.username }}</p>
+                    <p><strong>Created at:</strong> {{ room.created_at|date:"F j, Y, g:i a" }}</p>
+                </div>
+                <div class="col-md-6">
+                    {% if room.expires_at %}
+                        <p><strong>Expires at:</strong> {{ room.expires_at|date:"F j, Y, g:i a" }}</p>
+                        <p><strong>Status:</strong> 
+                            {% if room.is_expired %}
+                                <span class="badge bg-danger">Expired</span>
+                            {% else %}
+                                <span class="badge bg-success">Active</span>
+                            {% endif %}
+                        </p>
+                    {% else %}
+                        <p><strong>Expires:</strong> Never</p>
+                        <p><strong>Status:</strong> <span class="badge bg-success">Active</span></p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Meeting Links</h5>
+        </div>
+        <div class="card-body">
+            <div class="links-container">
+                <div class="link-card">
+                    <h6>Host Link</h6>
+                    <p class="small">Use this link to join as a host with full controls:</p>
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control form-control-sm" value="{{ host_url }}" id="host-url" readonly>
+                        <button class="btn btn-outline-secondary btn-sm" type="button" onclick="copyToClipboard('host-url')">Copy</button>
+                    </div>
+                    <a href="{{ host_url }}" class="btn btn-primary btn-sm mt-2" target="_blank">Join as Host</a>
+                </div>
+                
+                <div class="link-card">
+                    <h6>Guest Link</h6>
+                    <p class="small">Share this link with participants:</p>
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control form-control-sm" value="{{ guest_url }}" id="guest-url" readonly>
+                        <button class="btn btn-outline-secondary btn-sm" type="button" onclick="copyToClipboard('guest-url')">Copy</button>
+                    </div>
+                    <a href="{{ guest_url }}" class="btn btn-secondary btn-sm mt-2" target="_blank">Join as Guest</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if room.created_by == user %}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Scheduled Meetings</h5>
+                <a href="{% url 'jitsi_meetings:schedule_meeting' pk=room.id %}" class="btn btn-primary btn-sm">Schedule New Meeting</a>
+            </div>
+            <div class="card-body">
+                {% if scheduled_meetings %}
+                    <div class="list-group">
+                        {% for meeting in scheduled_meetings %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">{{ meeting.title }}</h5>
+                                    <small>{{ meeting.start_time|date:"M d, Y" }}</small>
+                                </div>
+                                <p class="mb-1">{{ meeting.start_time|time:"H:i" }} - {{ meeting.end_time|time:"H:i" }}</p>
+                                <p class="mb-1">
+                                    {% if meeting.recurring %}
+                                        <span class="badge bg-info">{{ meeting.get_recurrence_pattern_display }}</span>
+                                    {% endif %}
+                                    <small>{{ meeting.participants.count }} participants</small>
+                                </p>
+                                <a href="{% url 'jitsi_meetings:join_scheduled_meeting' meeting_id=meeting.id %}" class="btn btn-outline-primary btn-sm mt-2">Join</a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p>No scheduled meetings for this room.</p>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function copyToClipboard(elementId) {
+        var copyText = document.getElementById(elementId);
+        copyText.select();
+        copyText.setSelectionRange(0, 99999); /* For mobile devices */
+        document.execCommand("copy");
+        alert("Copied URL to clipboard!");
+    }
+</script>
+{% endblock %}

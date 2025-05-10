@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #4285f4;
+            padding: 20px;
+            color: white;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            padding: 20px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+        }
+        .meeting-details {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: white;
+            border: 1px solid #eee;
+            border-radius: 5px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #4285f4;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table td {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        table td:first-child {
+            font-weight: bold;
+            width: 30%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Meeting Invitation</h1>
+        </div>
+        <div class="content">
+            <p>Hello,</p>
+            <p>You have been invited to join a meeting by {{ host_name }}.</p>
+            
+            <div class="meeting-details">
+                <h2>{{ meeting.title }}</h2>
+                <table>
+                    <tr>
+                        <td>Date:</td>
+                        <td>{{ meeting.start_time|date:"F j, Y" }}</td>
+                    </tr>
+                    <tr>
+                        <td>Time:</td>
+                        <td>{{ meeting.start_time|time:"H:i" }} - {{ meeting.end_time|time:"H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <td>Host:</td>
+                        <td>{{ host_name }}</td>
+                    </tr>
+                    {% if meeting.recurring %}
+                    <tr>
+                        <td>Recurrence:</td>
+                        <td>{{ meeting.get_recurrence_pattern_display }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+            
+            <p>To join the meeting, please click the button below:</p>
+            
+            <div style="text-align: center;">
+                <a href="{{ join_url }}" class="button">Join Meeting</a>
+            </div>
+            
+            <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; background-color: #eee; padding: 10px; border-radius: 5px;">
+                {{ join_url }}
+            </p>
+            
+            <p>Best regards,<br>Jitsi Meetings</p>
+        </div>
+    </div>
+</body>
+</html>
