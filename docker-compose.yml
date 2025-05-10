@@ -1,0 +1,61 @@
+# docker-compose.yml for testing
+
+version: '3'
+
+services:
+  # Jitsi Meet components
+  web:
+    image: jitsi/web
+    ports:
+      - "8000:80"
+      - "8443:443"
+    volumes:
+      - ./jitsi-meet-cfg/web:/config
+    environment:
+      - ENABLE_AUTH=1
+      - ENABLE_GUESTS=1
+      - AUTH_TYPE=jwt
+      - JWT_APP_ID=jitsi-py-test
+      - JWT_APP_SECRET=test-secret
+      - DISABLE_HTTPS=1
+      - PUBLIC_URL=http://localhost:8000
+    networks:
+      jitsi-network:
+        aliases:
+          - jitsi-meet.example.com
+
+  prosody:
+    image: jitsi/prosody
+    ports:
+      - "5280:5280"
+    volumes:
+      - ./jitsi-meet-cfg/prosody:/config
+    environment:
+      - AUTH_TYPE=jwt
+      - JWT_APP_ID=jitsi-py-test
+      - JWT_APP_SECRET=test-secret
+    networks:
+      jitsi-network:
+
+  jicofo:
+    image: jitsi/jicofo
+    volumes:
+      - ./jitsi-meet-cfg/jicofo:/config
+    environment:
+      - XMPP_SERVER=prosody
+    networks:
+      jitsi-network:
+
+  jvb:
+    image: jitsi/jvb
+    ports:
+      - "10000:10000/udp"
+    volumes:
+      - ./jitsi-meet-cfg/jvb:/config
+    environment:
+      - XMPP_SERVER=prosody
+    networks:
+      jitsi-network:
+
+networks:
+  jitsi-network:
