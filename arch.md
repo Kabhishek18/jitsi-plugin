@@ -40,3 +40,19 @@ touch jitsi_plus_plugin/__init__.py \
       jitsi_plus_plugin/utils/permission.py \
       jitsi_plus_plugin/utils/scaling.py
 ```
+```python 
+# Run all tests
+pytest tests/
+
+# Run tests for a specific component
+pytest tests/test_jitsi_connector_complete.py
+pytest tests/test_media_server_vod.py
+pytest tests/test_video_call_controller.py
+# etc.
+
+# Run with coverage report
+pytest --cov=jitsi_plus_plugin tests/
+
+# Generate an HTML coverage report
+pytest --cov=jitsi_plus_plugin --cov-report=html tests/
+```

@@ -1,8 +1,10 @@
-# tests/test_jitsi_connector.py
+# tests/test_jitsi_connector_complete.py (continued)
 import pytest
 import uuid
 import json
-from unittest.mock import Mock, patch, AsyncMock
+import asyncio
+import websockets
+from unittest.mock import Mock, patch, AsyncMock, MagicMock
 
 from jitsi_plus_plugin.core.jitsi_connector import JitsiConnector
 
@@ -15,171 +17,6 @@ def jitsi_connector():
         "use_ssl": True
     }
     return JitsiConnector(config)
-
-@pytest.fixture
-def mock_response():
-    """Create a mock HTTP response."""
-    mock = Mock()
-    mock.status_code = 200
-    mock.json.return_value = {"status": "success"}
-    return mock
-
-def test_initialize(jitsi_connector, mock_response):
-    """Test the initialize method."""
-    with patch('requests.get', return_value=mock_response) as mock_get:
-        result = jitsi_connector.initialize()
-        
-        assert result is True
-        assert jitsi_connector.connected is True
-        mock_get.assert_called_once_with(
-            f"{jitsi_connector.server_url}/http-pre-bind", 
-            timeout=5
-        )
-
-def test_initialize_failure(jitsi_connector):
-    """Test the initialize method with a failure response."""
-    mock_response = Mock()
-    mock_response.status_code = 500
-    
-    with patch('requests.get', return_value=mock_response) as mock_get:
-        result = jitsi_connector.initialize()
-        
-        assert result is False
-        assert jitsi_connector.connected is False
-        mock_get.assert_called_once_with(
-            f"{jitsi_connector.server_url}/http-pre-bind", 
-            timeout=5
-        )
-
-def test_create_room(jitsi_connector):
-    """Test the create_room method."""
-    with patch('uuid.uuid4', return_value=Mock(spec=uuid.UUID, __str__=lambda _: "12345678-90ab-cdef-ghij-klmnopqrstuv")):
-        room_info = jitsi_connector.create_room()
-        
-        assert room_info["room_name"] == "test-12345678"
-        assert room_info["features"]["video"] is True
-        assert room_info["features"]["audio"] is True
-        assert room_info["features"]["chat"] is True
-        assert len(jitsi_connector.active_rooms) == 1
-        assert room_info["room_name"] in jitsi_connector.active_rooms
-
-def test_create_room_with_name(jitsi_connector):
-    """Test the create_room method with a specific room name."""
-    room_name = "specific-room-name"
-    room_info = jitsi_connector.create_room(room_name)
-    
-    assert room_info["room_name"] == room_name
-    assert room_info["features"]["video"] is True
-    assert room_info["features"]["audio"] is True
-    assert room_info["features"]["chat"] is True
-    assert len(jitsi_connector.active_rooms) == 1
-    assert room_name in jitsi_connector.active_rooms
-
-def test_join_room(jitsi_connector):
-    """Test the join_room method."""
-    room_name = "test-room"
-    participant_name = "Test User"
-    
-    # Create a room first
-    jitsi_connector.create_room(room_name)
-    
-    # Join the room
-    with patch('uuid.uuid4', return_value=Mock(spec=uuid.UUID, __str__=lambda _: "98765432-10ab-cdef-ghij-klmnopqrstuv")):
-        participant_info = jitsi_connector.join_room(room_name, participant_name)
-        
-        assert participant_info["id"] == "98765432-10ab-cdef-ghij-klmnopqrstuv"
-        assert participant_info["name"] == participant_name
-        assert participant_info["features"]["video"] is True
-        assert participant_info["features"]["audio"] is True
-        assert participant_info["id"] in jitsi_connector.active_rooms[room_name]["participants"]
-
-def test_join_room_auto_create(jitsi_connector):
-    """Test that join_room auto-creates a room if it doesn't exist."""
-    room_name = "auto-created-room"
-    participant_name = "Test User"
-    
-    # Join a room that doesn't exist yet (should be auto-created)
-    participant_info = jitsi_connector.join_room(room_name, participant_name)
-    
-    assert participant_info["name"] == participant_name
-    assert room_name in jitsi_connector.active_rooms
-    assert participant_info["id"] in jitsi_connector.active_rooms[room_name]["participants"]
-
-def test_leave_room(jitsi_connector):
-    """Test the leave_room method."""
-    room_name = "test-room"
-    
-    # Create a room and add a participant
-    jitsi_connector.create_room(room_name)
-    participant_info = jitsi_connector.join_room(room_name, "Test User")
-    
-    # Leave the room
-    result = jitsi_connector.leave_room(room_name, participant_info["id"])
-    
-    assert result is True
-    assert participant_info["id"] not in jitsi_connector.active_rooms[room_name]["participants"]
-
-def test_leave_room_last_participant(jitsi_connector):
-    """Test that the room is cleaned up when the last participant leaves."""
-    room_name = "test-room"
-    
-    # Create a room and add a participant
-    jitsi_connector.create_room(room_name)
-    participant_info = jitsi_connector.join_room(room_name, "Test User")
-    
-    # Leave the room (last participant)
-    result = jitsi_connector.leave_room(room_name, participant_info["id"])
-    
-    assert result is True
-    assert room_name not in jitsi_connector.active_rooms  # Room should be cleaned up
-
-def test_leave_nonexistent_room(jitsi_connector):
-    """Test leaving a room that doesn't exist."""
-    result = jitsi_connector.leave_room("nonexistent-room", "participant-id")
-    
-    assert result is False
-
-def test_configure_room(jitsi_connector):
-    """Test the configure_room method."""
-    room_name = "test-room"
-    
-    # Create a room
-    jitsi_connector.create_room(room_name)
-    
-    # Configure room features
-    features = {
-        "video": False,
-        "chat": False,
-        "polls": True
-    }
-    
-    result = jitsi_connector.configure_room(room_name, features)
-    
-    assert result is True
-    assert jitsi_connector.active_rooms[room_name]["features"]["video"] is False
-    assert jitsi_connector.active_rooms[room_name]["features"]["chat"] is False
-    assert jitsi_connector.active_rooms[room_name]["features"]["polls"] is True
-    # Other features should remain unchanged
-    assert jitsi_connector.active_rooms[room_name]["features"]["audio"] is True
-
-def test_toggle_participant_feature(jitsi_connector):
-    """Test the toggle_participant_feature method."""
-    room_name = "test-room"
-    
-    # Create a room and add a participant
-    jitsi_connector.create_room(room_name)
-    participant_info = jitsi_connector.join_room(room_name, "Test User")
-    
-    # Toggle a feature
-    result = jitsi_connector.toggle_participant_feature(
-        room_name, participant_info["id"], "video", False
-    )
-    
-    assert result is True
-    assert jitsi_connector.active_rooms[room_name]["participants"][participant_info["id"]]["features"]["video"] is False
-    
-    # Video should be disabled but audio should still be enabled
-    assert jitsi_connector.active_rooms[room_name]["participants"][participant_info["id"]]["features"]["audio"] is True
 
 def test_get_room_info(jitsi_connector):
     """Test the get_room_info method."""
@@ -195,6 +32,12 @@ def test_get_room_info(jitsi_connector):
     assert room_info == created_room
     assert room_info["room_name"] == room_name
 
+def test_get_room_info_nonexistent(jitsi_connector):
+    """Test getting info for a nonexistent room."""
+    room_info = jitsi_connector.get_room_info("nonexistent-room")
+    
+    assert room_info is None
+
 def test_get_participant_info(jitsi_connector):
     """Test the get_participant_info method."""
     room_name = "test-room"
@@ -209,6 +52,24 @@ def test_get_participant_info(jitsi_connector):
     assert retrieved_info is not None
     assert retrieved_info == participant_info
     assert retrieved_info["name"] == "Test User"
+
+def test_get_participant_info_nonexistent_room(jitsi_connector):
+    """Test getting participant info from a nonexistent room."""
+    participant_info = jitsi_connector.get_participant_info("nonexistent-room", "participant-id")
+    
+    assert participant_info is None
+
+def test_get_participant_info_nonexistent_participant(jitsi_connector):
+    """Test getting info for a nonexistent participant."""
+    room_name = "test-room"
+    
+    # Create a room
+    jitsi_connector.create_room(room_name)
+    
+    # Get info for a nonexistent participant
+    participant_info = jitsi_connector.get_participant_info(room_name, "nonexistent-participant")
+    
+    assert participant_info is None
 
 def test_get_jitsi_url(jitsi_connector):
     """Test the get_jitsi_url method."""
@@ -238,14 +99,103 @@ async def test_connect_websocket(jitsi_connector):
         assert sent_data["action"] == "join"
         assert sent_data["room"] == room_name
 
+@pytest.mark.asyncio
+async def test_connect_websocket_exception(jitsi_connector):
+    """Test the connect_websocket method with an exception."""
+    room_name = "test-room"
+    
+    # Mock websocket.connect to raise an exception
+    with patch('websockets.connect', side_effect=Exception("Test error")):
+        result = await jitsi_connector.connect_websocket(room_name)
+        
+        assert result is False
+        assert jitsi_connector.websocket is None
+
+@pytest.mark.asyncio
+async def test_websocket_listener(jitsi_connector):
+    """Test the _websocket_listener method."""
+    # Set up mock callbacks
+    jitsi_connector.on_participant_joined = Mock()
+    jitsi_connector.on_participant_left = Mock()
+    jitsi_connector.on_message_received = Mock()
+    
+    # Mock websocket
+    mock_websocket = AsyncMock()
+    jitsi_connector.websocket = mock_websocket
+    
+    # Mock messages
+    messages = [
+        json.dumps({
+            "type": "participant_joined",
+            "room": "test-room",
+            "participant": {"id": "participant-id", "name": "Test User"}
+        }),
+        json.dumps({
+            "type": "participant_left",
+            "room": "test-room",
+            "participant": {"id": "participant-id", "name": "Test User"}
+        }),
+        json.dumps({
+            "type": "message",
+            "room": "test-room",
+            "from": "participant-id",
+            "message": "Hello, world!"
+        }),
+        websockets.exceptions.ConnectionClosed(None, None)  # To exit the loop
+    ]
+    
+    # Mock receive method to return the messages
+    mock_websocket.recv.side_effect = messages
+    
+    # Run the listener
+    await jitsi_connector._websocket_listener()
+    
+    # Check that callbacks were called
+    jitsi_connector.on_participant_joined.assert_called_once_with(
+        "test-room", {"id": "participant-id", "name": "Test User"}
+    )
+    jitsi_connector.on_participant_left.assert_called_once_with(
+        "test-room", {"id": "participant-id", "name": "Test User"}
+    )
+    jitsi_connector.on_message_received.assert_called_once_with(
+        "test-room", "participant-id", "Hello, world!"
+    )
+
+@pytest.mark.asyncio
+async def test_websocket_listener_exception(jitsi_connector):
+    """Test the _websocket_listener method with an exception."""
+    # Mock websocket
+    mock_websocket = AsyncMock()
+    jitsi_connector.websocket = mock_websocket
+    
+    # Mock receive method to raise an exception
+    mock_websocket.recv.side_effect = Exception("Test error")
+    
+    # Run the listener
+    await jitsi_connector._websocket_listener()
+    
+    # Just checking that the function handles the exception without crashing
+
 def test_disconnect(jitsi_connector):
     """Test the disconnect method."""
     # Connect and then disconnect
-    with patch.object(jitsi_connector, 'websocket', new=AsyncMock()) as mock_websocket:
+    with patch.object(jitsi_connector, 'websocket', new=AsyncMock()) as mock_websocket, \
+         patch('asyncio.create_task') as mock_create_task:
+        
         jitsi_connector.connected = True
         jitsi_connector.disconnect()
         
         assert jitsi_connector.connected is False
-        # verify that a close task was created for the websocket
-        import asyncio
-        assert isinstance(asyncio.create_task.call_args[0][0], type(mock_websocket.close()))
+        mock_create_task.assert_called_once()
+        # Ensure a close task was created for the websocket
+        assert isinstance(mock_create_task.call_args[0][0], type(mock_websocket.close()))
+
+def test_disconnect_without_websocket(jitsi_connector):
+    """Test disconnecting when there is no websocket."""
+    jitsi_connector.connected = True
+    jitsi_connector.websocket = None
+    
+    # Should not raise any exception
+    jitsi_connector.disconnect()
+    
+    assert jitsi_connector.connected is False
