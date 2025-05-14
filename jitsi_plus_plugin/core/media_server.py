@@ -374,11 +374,14 @@ class MediaServer:
             try:
                 # Terminate FFmpeg process gracefully
                 process.terminate()
-                process.wait(timeout=5)
                 
-                # If process is still running, kill it
-                if process.poll() is None:
+                try:
+                    # Wait for process to terminate
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired as e:
+                    # If process is still running, kill it forcefully
                     process.kill()
+                    logger.info(f"Force killed recording process for stream: {stream_key}")
                 
                 # Remove from recording processes
                 del self.recording_processes[stream_key]
@@ -391,7 +394,7 @@ class MediaServer:
                 logger.info(f"Stopped recording for stream: {stream_key}")
             except Exception as e:
                 logger.error(f"Error stopping recording for stream {stream_key}: {str(e)}")
-    
+
     def _process_vod_file(self, vod_id: str, file_path: str):
         """
         Process a VOD file to extract metadata.

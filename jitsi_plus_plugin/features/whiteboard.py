@@ -113,7 +113,8 @@ class WhiteboardController:
             return True
         
         return False
-    
+
+
     def add_element(self, room_id: str, element_data: Dict[str, Any], user_id: str) -> Dict[str, Any]:
         """
         Add an element to a whiteboard.
